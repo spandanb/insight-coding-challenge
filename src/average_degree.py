@@ -9,7 +9,7 @@ import itertools
 
 from dateutil import parser as dateparser
 import datetime
-from collections import Counter
+from collections import OrderedDict
 
 import time
 import cProfile as profile
@@ -17,9 +17,16 @@ import cProfile as profile
 """
 Some observations:
     ratio of new hashtags pairs to old hashtag pairs= 1:8
+    -therefore, makes sense to drop stale hashtags
+    -also a linear search on existing hashtags may not be a bad idea
     
     out of order to in-order tweets: 1:10
-    -and negligible amount are outside 60second window
+    -therefore, it makes sense to store tweets ordered by time, since out of order packets are infrequent
+    and negligible amount are outside 60second window
+    -therefore checking for this and skipping a loop iteration will have negligible gains, albeit no cost either
+   
+    each iteration, 0.12 entries are invalidated and removed
+
 """
 
 def printobj(obj):
@@ -93,6 +100,11 @@ def main(input_file='../tweet_input/tweets4.txt',
 
     #Newest tweet, initialize to epoch
     newest = dateparser.parse("Jan 1 0:0:0 +0000 1970")
+
+    #average number of invalidations per cycle
+    invcount = 0
+    i=0
+
     for tweet_str in get_tweets(input_file):
 
         #Step 1: Update the links
@@ -126,11 +138,16 @@ def main(input_file='../tweet_input/tweets4.txt',
 #        #equivalent to, but  supposedly faster, but this splits the string
 #        valid = [tag for pair in valid for tag in key_to_pair(pair)]
 
-        
+        oldlen = len(links) 
         #This is an alternate approach to above
         #This one performs better for larger datasets
         links = { pair: date for pair, date in links.items() 
                     if not is_stale(newest, date)}
+
+        newlen = len(links)
+
+        invcount += oldlen - newlen
+        i += 1
 
         valid = [tag for pair in links.keys() for tag in key_to_pair(pair)]
 
@@ -145,6 +162,8 @@ def main(input_file='../tweet_input/tweets4.txt',
         
         #write output to file
         outfile.write(format_num(avg)) 
+
+    print "Average invalidation count: {}".format(invcount / float(i))
 
 if __name__ == "__main__":
     
