@@ -1,6 +1,10 @@
 import pdb
 
 class odict(dict):
+    """
+    Typical usage would be where keys are hashtag
+    pairs and values are the dates
+    """
     def __init__(self, *args, **kw):
         super(odict,self).__init__(*args, **kw)
         self.itemlist = super(odict,self).keys()
@@ -85,6 +89,7 @@ class odict(dict):
             self.itemlist.append(key)
         super(odict,self).__setitem__(key, value)
 
+        #NOTE: eviction must happen after the set operation
         tail = self[self.itemlist[-1]]
         return self.evict_entries(tail)
 

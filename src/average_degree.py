@@ -16,6 +16,7 @@ from hashlist import odict
 import time
 import cProfile as profile
 
+
 """
 Some observations:
     ratio of new hashtags pairs to old hashtag pairs= 1:8
@@ -92,6 +93,8 @@ def format_num2(num):
     """
     return "{:.2f}".format(int(num * 100)/100.0)
 
+def get_uc(valid):
+    return float(len(set(valid)))
 
 def main(input_file='../tweet_input/tweets4.txt', 
          output_file='../tweet_output/output.txt'):
@@ -107,6 +110,14 @@ def main(input_file='../tweet_input/tweets4.txt',
     #instead of computing in each iteration
     #incrementally compute- may be better for large data sets
     len_valid = 0
+
+    #For this to work, you need either:
+    #1) keep a separate representation of individual tags in a separate dict
+    #2) or have a data structure that can do partial matches, i.e. on the first tag or second tag. Perhaps a generalized trie
+    #unique_tags = {}
+    unique_count = 0
+    entries_added = False 
+    entries_removed = True
 
     for tweet_str in get_tweets(input_file):
 
@@ -128,20 +139,33 @@ def main(input_file='../tweet_input/tweets4.txt',
                 #links[pkey] = date
 
                 #Update new insertions
-                if pair not in links: len_valid += 1
-                len_valid -= links.__setitem__(pair, date)
+                if pair not in links: 
+                    len_valid += 1
+                    entries_added = True
+                #len_valid -= links.__setitem__(pair, date)
+                
+                tmp = links.__setitem__(pair, date)
+                len_valid -= tmp
+                if tmp == 0: entries_removed = False
     
         else:
             #explicitly evict entries 
             #since automatic eviction only happens on insert
-            len_valid -= links.evict_entries(newest)
+            #len_valid -= links.evict_entries(newest)
+            
+            tmp = links.evict_entries(newest)
+            len_valid -= tmp 
+            if tmp == 0: entries_removed = False
+                
        
         #Cumulative number of tags in all pairings
         valid = [tag for pair in links.keys() for tag in pair]
         #valid = [tag for pair in links.keys() for tag in key_to_pair(pair)]
         
         #The unique number of tags
-        unique_count = float(len(set(valid)))
+        if entries_removed or entries_added:
+            unique_count = get_uc(valid) #float(len(set(valid)))
+        #else: don't update unique_count
         if unique_count == 0:
             avg = 0
         else:
@@ -154,15 +178,17 @@ def main(input_file='../tweet_input/tweets4.txt',
         #write output to file
         outfile.write(format_num(avg)) 
 
+        entries_added = False 
+        entries_removed = True
 
 if __name__ == "__main__":
     
 
     if len(sys.argv) == 3:
-        start_time = time.time()
-        main(input_file=sys.argv[1], output_file=sys.argv[2])
-        print("--- %s seconds ---" % (time.time() - start_time))
-        #profile.run('main(input_file=sys.argv[1], output_file=sys.argv[2])')
+        #start_time = time.time()
+        #main(input_file=sys.argv[1], output_file=sys.argv[2])
+        #print("--- %s seconds ---" % (time.time() - start_time))
+        profile.run('main(input_file=sys.argv[1], output_file=sys.argv[2])')
     else:
        print "Invalid Number of arguments"
        sys.exit(1)
