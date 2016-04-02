@@ -10,6 +10,8 @@ import itertools
 from dateutil import parser as dateparser
 import datetime
 from collections import OrderedDict
+from hashlist import odict
+
 
 import time
 import cProfile as profile
@@ -94,16 +96,13 @@ def format_num2(num):
 def main(input_file='../tweet_input/tweets4.txt', 
          output_file='../tweet_output/output.txt'):
     
-    links = {}
+    #links = {}
+    links = odict()
 
     outfile = open(output_file, 'w')
 
     #Newest tweet, initialize to epoch
     newest = dateparser.parse("Jan 1 0:0:0 +0000 1970")
-
-    #average number of invalidations per cycle
-    invcount = 0
-    i=0
 
     for tweet_str in get_tweets(input_file):
 
@@ -114,7 +113,7 @@ def main(input_file='../tweet_input/tweets4.txt',
             continue
         
         date = dateparser.parse(tweet['created_at'])
-        
+
         #Determine the newest
         newest = newer(newest, date)
 
@@ -124,33 +123,17 @@ def main(input_file='../tweet_input/tweets4.txt',
                 pkey = pair_to_key(pair)
                 links[pkey] = date 
         else:
-            pass
-            #print hashtags
+            #explicitly evict entries 
+            #since automatic eviction only happens on insert
+            links.evict_entries(newest)
        
-#        #Step 2: invalidate stale entries
-#        #these are valid pairs
-#        valid = [ pair for pair, date in links.items() 
-#                    if not is_stale(newest, date)]
-#        
-#        #this can be combined with the above
-#        #keep it separate for readability for now
-#        #separates pairs into individual tags 
-#        #equivalent to, but  supposedly faster, but this splits the string
-#        valid = [tag for pair in valid for tag in key_to_pair(pair)]
+        #links = { pair: date for pair, date in links.items() 
+        #            if not is_stale(newest, date)}
 
-        oldlen = len(links) 
-        #This is an alternate approach to above
-        #This one performs better for larger datasets
-        links = { pair: date for pair, date in links.items() 
-                    if not is_stale(newest, date)}
-
-        newlen = len(links)
-
-        invcount += oldlen - newlen
-        i += 1
-
+        #Cumulative number of tags in all pairings
         valid = [tag for pair in links.keys() for tag in key_to_pair(pair)]
-
+        
+        #The unique number of tags
         unique_count = float(len(set(valid)))
         if unique_count == 0:
             avg = 0
@@ -163,7 +146,6 @@ def main(input_file='../tweet_input/tweets4.txt',
         #write output to file
         outfile.write(format_num(avg)) 
 
-    print "Average invalidation count: {}".format(invcount / float(i))
 
 if __name__ == "__main__":
     

@@ -4,6 +4,38 @@ class odict(dict):
     def __init__(self, *args, **kw):
         super(odict,self).__init__(*args, **kw)
         self.itemlist = super(odict,self).keys()
+        self.maxstep = 59
+
+    def evict_entries(self, ref):
+        """
+        evicts stale entries with
+        regards to ref.
+        ref is either the value of the tail node
+        or if no entry was inserted, then 
+        the value of the null entry
+        """
+        #delete stale entries
+        #NOTE: in-actual case, we would never have the case
+        #where a stale entry is being inserted 
+        #since that would have been checked before
+        #NOTE: Not sure if this is necessarily true
+        
+        #index and key
+        for i, k in enumerate(self.itemlist):
+            #if ref - self[k] < 60:
+            if (ref - self[k]).total_seconds() < 60:
+                break
+        else:
+            #if a break didn't happen must delete the whole list
+            #TODO, you can also have an explicit check at the top
+            #see which is more performant
+            i = len(self.itemlist)
+        #remove all elements until but excluding i
+        to_remove = self.itemlist[0:i]
+        self.itemlist = self.itemlist[i:]
+        
+        for k in to_remove:
+            super(odict, self).__delitem__(k)
 
     def __setitem__(self, key, value):
         """
@@ -12,8 +44,6 @@ class odict(dict):
         -insert in increasing order
         -removing stale keys
         """
-
-        maxdist = 59
 
         #Handle updates to existing key
         if super(odict,self).has_key(key): 
@@ -50,23 +80,8 @@ class odict(dict):
             self.itemlist.append(key)
         super(odict,self).__setitem__(key, value)
 
-        #delete stale entries
-        #NOTE: in-actual case, we would never have the case
-        #where a stale entry is being inserted 
-        #since that would have been checked before
         tail = self[self.itemlist[-1]]
-        #index and key
-        for i, k in enumerate(self.itemlist):
-            #if tail - self[k] < 59:
-            if (tail - self[k]).total_seconds() < 60:
-                break
-
-        #remove all elements until but excluding i
-        to_remove = self.itemlist[0:i]
-        self.itemlist = self.itemlist[i:]
-        
-        for k in to_remove:
-            super(odict, self).__delitem__(k)
+        self.evict_entries(tail)
 
     def __iter__(self):
         return iter(self.itemlist)
@@ -88,6 +103,6 @@ if __name__ == "__main__":
     print d
     d['d'] = 2
     print d
-    d['x'] = 4
+    d.evict_entries(70)
     print d
 
