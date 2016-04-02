@@ -62,7 +62,7 @@ def format_num2(num):
 
 def main(input_file_path, output_file_path):
     
-    #The links (egdes) are represented by an ordered dictionary
+    #The links (egdes) are represented using a hashlist
     links = hashlist()
     #The number of unique links.
     #This can be incrementally computed over each iteration
@@ -115,7 +115,7 @@ def main(input_file_path, output_file_path):
             entries_removed = removed_count != 0
                 
         #Entries were evicted and/or added
-        #recalculate the the number of unique tags
+        #recalculate the number of unique tags
         if entries_removed or entries_added:
             #list of all tags in all pairings
             all_tags = [tag for pair in links.keys() for tag in pair]

@@ -53,7 +53,7 @@ class hashlist(dict):
 
     def add_and_update(self, key, value):
         """
-        utility method that calls setitem and evict entries
+        Convenience method that calls __setitem__ and evict_entries
 
         Arguments:-
             key: key of new entry to dict
@@ -82,42 +82,41 @@ class hashlist(dict):
         #Handle updates to existing key
         #remove key from its old location so it can 
         #be added to new location
-        if super(hashlist,self).has_key(key): 
+        if super(hashlist, self).has_key(key): 
             #NOTE: This does a linear search 
             #consider using linkedlist
             self.itemlist.remove(key)
 
-        #insert so is ordered (increasing) by value
-        if len(self.itemlist) > 0:
-            if value >= self[self.itemlist[-1]]:
-                self.itemlist.append(key)
-            else:
-                #Attach at head
-                if self[self.itemlist[0]] >= value:
-                    self.itemlist.insert(0, key)
-
-                else:
-                    #must attach somewhere in the middle
-                    #start by moving the tail element, one over
-                    self.itemlist.append(self.itemlist[-1])
-                    
-                    #start from the tail end of the list and find the correct
-                    #location to insert the key
-                    #the idx of last element is __len__ -1
-                    #the list was extended by 1, so to access last element would be __len__ -2
-                    #to access the second last element is therefore __len__ -3
-                    for i in range(len(self.itemlist) - 3, 0, -1):
-                        #matching location found
-                        #insert and break
-                        if value >= self[self.itemlist[i]]:
-                            self.itemlist[i+1] = key
-                            break
-                        else:
-                            #Move the element one over
-                            self.itemlist[i+1] = self.itemlist[i]
-
-        else:
+        #insert so ordering of values is preserved
+        #insert at the tail of the list if list is empty 
+        #or if this entry has the highest value
+        if not self.itemlist or value >= self[self.itemlist[-1]]:
             self.itemlist.append(key)
+
+        #insert at head of the list
+        elif self[self.itemlist[0]] >= value:
+            self.itemlist.insert(0, key)
+
+        #must attach somewhere in the middle
+        else:
+            #start by moving the tail element, one over
+            self.itemlist.append(self.itemlist[-1])
+            
+            #start from the tail end of the list and find the correct
+            #location to insert the key
+            #the idx of last element is __len__ -1
+            #the list was extended by 1, so to access last element would be __len__ -2
+            #to access the second last element is therefore __len__ -3
+            for i in range(len(self.itemlist) - 3, 0, -1):
+                #matching location found
+                #insert and break
+                if value >= self[self.itemlist[i]]:
+                    self.itemlist[i+1] = key
+                    break
+                else:
+                    #Move the element one over
+                    self.itemlist[i+1] = self.itemlist[i]
+
         super(hashlist,self).__setitem__(key, value)
 
 
