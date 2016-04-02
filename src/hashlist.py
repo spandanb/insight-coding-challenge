@@ -4,7 +4,7 @@ class odict(dict):
     def __init__(self, *args, **kw):
         super(odict,self).__init__(*args, **kw)
         self.itemlist = super(odict,self).keys()
-        self.maxstep = 59
+        self.maxstep = 60
 
     def evict_entries(self, ref):
         """
@@ -22,20 +22,22 @@ class odict(dict):
         
         #index and key
         for i, k in enumerate(self.itemlist):
-            #if ref - self[k] < 60:
-            if (ref - self[k]).total_seconds() < 60:
+            #if ref - self[k] < self.maxstep:
+            if (ref - self[k]).total_seconds() < 60: #self.maxstep:
                 break
         else:
             #if a break didn't happen must delete the whole list
-            #TODO, you can also have an explicit check at the top
-            #see which is more performant
+            #No performance gains between checking this condition before loop 
             i = len(self.itemlist)
+        
         #remove all elements until but excluding i
         to_remove = self.itemlist[0:i]
         self.itemlist = self.itemlist[i:]
         
         for k in to_remove:
             super(odict, self).__delitem__(k)
+
+        return len(to_remove)
 
     def __setitem__(self, key, value):
         """
@@ -66,6 +68,9 @@ class odict(dict):
                     #start by moving the tail element, one over
                     self.itemlist.append(self.itemlist[-1])
                     
+                    #the idx of last element is __len__ -1
+                    #the list was extended by 1, so to access last element would be __len__ -2
+                    #to access the second last element is therefore __len__ -3
                     for i in range(len(self.itemlist) - 3, 0, -1):
                         #matching location found
                         #insert and break
@@ -81,7 +86,7 @@ class odict(dict):
         super(odict,self).__setitem__(key, value)
 
         tail = self[self.itemlist[-1]]
-        self.evict_entries(tail)
+        return self.evict_entries(tail)
 
     def __iter__(self):
         return iter(self.itemlist)

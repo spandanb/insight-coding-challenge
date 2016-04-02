@@ -104,6 +104,10 @@ def main(input_file='../tweet_input/tweets4.txt',
     #Newest tweet, initialize to epoch
     newest = dateparser.parse("Jan 1 0:0:0 +0000 1970")
 
+    #instead of computing in each iteration
+    #incrementally compute- may be better for large data sets
+    len_valid = 0
+
     for tweet_str in get_tweets(input_file):
 
         #Step 1: Update the links
@@ -121,15 +125,17 @@ def main(input_file='../tweet_input/tweets4.txt',
         if len(hashtags) > 1: 
             for pair in get_pairs(hashtags):
                 pkey = pair_to_key(pair)
-                links[pkey] = date 
+                #links[pkey] = date
+
+                #Update new insertions
+                if pkey not in links: len_valid += 1
+                len_valid -= links.__setitem__(pkey, date)
+    
         else:
             #explicitly evict entries 
             #since automatic eviction only happens on insert
-            links.evict_entries(newest)
+            len_valid -= links.evict_entries(newest)
        
-        #links = { pair: date for pair, date in links.items() 
-        #            if not is_stale(newest, date)}
-
         #Cumulative number of tags in all pairings
         valid = [tag for pair in links.keys() for tag in key_to_pair(pair)]
         
@@ -138,7 +144,8 @@ def main(input_file='../tweet_input/tweets4.txt',
         if unique_count == 0:
             avg = 0
         else:
-            avg = len(valid) / unique_count 
+            #avg = len(valid) / unique_count 
+            avg = len_valid * 2 / unique_count 
 
         #print("{}        {}        {}".format(unique_count, len(valid), format_num2(avg)))
         #print("{}".format(format_num2(avg))) #Actual output
