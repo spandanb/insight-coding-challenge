@@ -61,11 +61,11 @@ def get_pairs(hashtags):
     hashtags = sorted(hashtags)
     return list(itertools.combinations(hashtags, 2))
 
-def pair_to_key(pair):
-    return u"{} {}".format(pair[0], pair[1])
-
-def key_to_pair(key):
-    return key.split(" ")
+#def pair_to_key(pair):
+#    return u"{} {}".format(pair[0], pair[1])
+#
+#def key_to_pair(key):
+#    return key.split(" ")
 
 def newer(d1, d2):
     """
@@ -124,12 +124,12 @@ def main(input_file='../tweet_input/tweets4.txt',
         hashtags = [hashtag['text'] for hashtag in tweet['entities']['hashtags']]
         if len(hashtags) > 1: 
             for pair in get_pairs(hashtags):
-                pkey = pair_to_key(pair)
+                #pkey = pair_to_key(pair)
                 #links[pkey] = date
 
                 #Update new insertions
-                if pkey not in links: len_valid += 1
-                len_valid -= links.__setitem__(pkey, date)
+                if pair not in links: len_valid += 1
+                len_valid -= links.__setitem__(pair, date)
     
         else:
             #explicitly evict entries 
@@ -137,7 +137,8 @@ def main(input_file='../tweet_input/tweets4.txt',
             len_valid -= links.evict_entries(newest)
        
         #Cumulative number of tags in all pairings
-        valid = [tag for pair in links.keys() for tag in key_to_pair(pair)]
+        valid = [tag for pair in links.keys() for tag in pair]
+        #valid = [tag for pair in links.keys() for tag in key_to_pair(pair)]
         
         #The unique number of tags
         unique_count = float(len(set(valid)))
