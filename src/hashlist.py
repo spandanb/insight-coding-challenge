@@ -1,37 +1,45 @@
-import pdb
 
-class odict(dict):
+class hashlist(dict):
     """
+    This class provides an ordered dictionary with
+    an age based eviction policy.
+    The keys are sorted (in increasing order) by the corresponding value.
+    
+    When an insert happens the entry is inserted 
+    in order to maintain ordering among the values. 
+    In addition, stale entries are evicted.  
+    
     Typical usage would be where keys are hashtag
-    pairs and values are the dates
+    pairs and values are the dates.
     """
     def __init__(self, *args, **kw):
-        super(odict,self).__init__(*args, **kw)
-        self.itemlist = super(odict,self).keys()
+        super(hashlist,self).__init__(*args, **kw)
+        #itemlist is an ordered list of keys
+        self.itemlist = super(hashlist,self).keys()
+        #the maximum age of an entry compared to the youngest entry   
         self.maxstep = 60
 
     def evict_entries(self, ref):
         """
-        evicts stale entries with
-        regards to ref.
-        ref is either the value of the tail node
-        or if no entry was inserted, then 
-        the value of the null entry
+        deletes stale entries with
+        respect to ref, i.e. those entries whose
+        value is less than ref by more than or equal
+        to maxstep 
+
+        Arguments:
+            ref:- reference value to compare the other values with
+
+        Returns: 
+            number of elements deleted
         """
-        #delete stale entries
-        #NOTE: in-actual case, we would never have the case
-        #where a stale entry is being inserted 
-        #since that would have been checked before
-        #NOTE: Not sure if this is necessarily true
         
         #index and key
         for i, k in enumerate(self.itemlist):
             #if ref - self[k] < self.maxstep:
-            if (ref - self[k]).total_seconds() < 60: #self.maxstep:
+            if (ref - self[k]).total_seconds() < self.maxstep:
                 break
         else:
             #if a break didn't happen must delete the whole list
-            #No performance gains between checking this condition before loop 
             i = len(self.itemlist)
         
         #remove all elements until but excluding i
@@ -39,22 +47,43 @@ class odict(dict):
         self.itemlist = self.itemlist[i:]
         
         for k in to_remove:
-            super(odict, self).__delitem__(k)
+            super(hashlist, self).__delitem__(k)
 
         return len(to_remove)
 
+    def add_and_update(self, key, value):
+        """
+        utility method that calls setitem and evict entries
+
+        Arguments:-
+            key: key of new entry to dict
+            value: value of new entry to dict
+
+        Returns: number of elements evicted
+        """
+        self.__setitem__(key, value)
+
+        #NOTE: eviction must happen after the set operation
+        tail = self[self.itemlist[-1]]
+        return self.evict_entries(tail)
+
     def __setitem__(self, key, value):
         """
-        A few things need to happen here
-        -check for existing key
-        -insert in increasing order
-        -removing stale keys
+        Sets the key, value pair. The insertions
+        maintain order with regards to values, i.e.
+        the tail has the highest value and the head 
+        has the lowest value.
+
+        Arguments:-
+            key: key of new entry to dict
+            value: value of new entry to dict
         """
 
         #Handle updates to existing key
-        if super(odict,self).has_key(key): 
-            #NOTE: This is super inefficient
-            #since this does a linear search
+        #remove key from its old location so it can 
+        #be added to new location
+        if super(hashlist,self).has_key(key): 
+            #NOTE: This does a linear search 
             #consider using linkedlist
             self.itemlist.remove(key)
 
@@ -72,6 +101,8 @@ class odict(dict):
                     #start by moving the tail element, one over
                     self.itemlist.append(self.itemlist[-1])
                     
+                    #start from the tail end of the list and find the correct
+                    #location to insert the key
                     #the idx of last element is __len__ -1
                     #the list was extended by 1, so to access last element would be __len__ -2
                     #to access the second last element is therefore __len__ -3
@@ -87,11 +118,8 @@ class odict(dict):
 
         else:
             self.itemlist.append(key)
-        super(odict,self).__setitem__(key, value)
+        super(hashlist,self).__setitem__(key, value)
 
-        #NOTE: eviction must happen after the set operation
-        tail = self[self.itemlist[-1]]
-        return self.evict_entries(tail)
 
     def __iter__(self):
         return iter(self.itemlist)
@@ -106,7 +134,7 @@ class odict(dict):
         return "{}".format([ "{}: {}".format(key, self[key]) for key in self])
 
 if __name__ == "__main__":
-    d = odict()
+    d = hashlist()
     d['a'] = 1
     print d
     d['b'] = 0
