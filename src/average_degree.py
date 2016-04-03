@@ -24,7 +24,7 @@ def get_hashtag_pairs(hashtags):
     Returns all possible binary combinations 
     from the list of hashtags provided.
     The hashtags pairs are such that
-    the lexiographically lesser string is first.
+    the lexiographically lesser hashtag is first.
     
     Arguments:
         hashtags:- list of hashtag strings
@@ -60,17 +60,38 @@ def format_num2(num):
     """
     return "{:.2f}".format(int(num * 100)/100.0)
 
-def main(input_file_path, output_file_path):
+def is_stale(ref, to_compare):
+    """
+    Determines whether to_compare is outside the 
+    60 second window with respect to ref
+
+    Arguments:
+        ref:- datetime reference object
+        to_compare:- the datetime object to compare
+    
+    Returns:-Boolean on whether to_compare is stale or not
+    """
+
+    return (ref - to_compare).total_seconds() >= 60
+
+def average_degree(input_file_path, output_file_path):
+    """
+    Calculates the rolling average degree of the hashtag
+    graph constructed by the tweets in input_file_path. 
+    Then writes the results to output_file_path
+
+    Arguments:
+        input_file_path:- the file containing the tweets
+        output_file_path:- output file to write the rolling average to
+    """
     
     #The links (egdes) are represented using a hashlist
     links = hashlist()
-    #The number of unique links.
+    #The number of links.
     #This can be incrementally computed over each iteration
     link_count = 0
-    #For this to work, you need either:
-    #1) keep a separate representation of individual tags in a separate dict
-    #2) or have a data structure that can do partial matches, i.e. on the first tag or second tag. Perhaps a generalized trie
-    unique_count = 0
+    #Number of unique tags
+    tag_count = 0
     entries_added = False 
     entries_removed = True
 
@@ -88,10 +109,15 @@ def main(input_file_path, output_file_path):
         if 'created_at' not in tweet:
             continue
         
-        date = dateparser.parse(tweet['created_at'])
+        created_at = dateparser.parse(tweet['created_at'])
 
-        #Determine the newest date
-        newest = max(newest, date)
+        #if this entry is outside the 60-second window, skip it
+        if is_stale(newest, created_at): 
+            continue
+
+        #Determine the newest date since we can have out of order tweets
+        #and the newest tweet determines which entries to evict
+        newest = max(newest, created_at)
 
         hashtags = [hashtag['text'] for hashtag in tweet['entities']['hashtags']]
         if len(hashtags) > 1: 
@@ -103,7 +129,7 @@ def main(input_file_path, output_file_path):
                     entries_added = True
 
                 #number of entries that were removed
-                removed_count  = links.add_and_update(pair, date)
+                removed_count  = links.add_and_update(pair, created_at)
                 link_count -= removed_count
                 entries_removed = removed_count != 0
     
@@ -120,16 +146,16 @@ def main(input_file_path, output_file_path):
             #list of all tags in all pairings
             all_tags = [tag for pair in links.keys() for tag in pair]
             
-            unique_count = float(len(set(all_tags)))
+            tag_count = float(len(set(all_tags)))
         
         entries_added = False 
         entries_removed = True
         
         #calculate the average, i.e. number of links / number of nodes
-        if unique_count == 0:
+        if tag_count == 0:
             avg = 0
         else:
-            avg = link_count * 2 / unique_count 
+            avg = link_count * 2 / tag_count 
 
         #print("{}        {}        {}".format(unique_count, len(valid), format_num2(avg)))
         #print("{}".format(format_num2(avg))) #Actual output
@@ -143,7 +169,7 @@ if __name__ == "__main__":
     
     if len(sys.argv) == 3:
         start_time = time.time()
-        main(sys.argv[1], sys.argv[2])
+        average_degree(sys.argv[1], sys.argv[2])
         print("--- %s seconds ---" % (time.time() - start_time))
         #profile.run('main(input_file=sys.argv[1], output_file=sys.argv[2])')
     else:

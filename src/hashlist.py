@@ -1,4 +1,6 @@
-
+"""
+This module defines the hashlist class.
+"""
 class hashlist(dict):
     """
     This class provides an ordered dictionary with
@@ -83,9 +85,14 @@ class hashlist(dict):
         #remove key from its old location so it can 
         #be added to new location
         if super(hashlist, self).has_key(key): 
-            #NOTE: This does a linear search 
-            #consider using linkedlist
-            self.itemlist.remove(key)
+            #Only delete if the existing entry is older            
+            if self[key] < value: 
+                #NOTE: This does a linear search 
+                #consider using linkedlist or 
+                #combining this search and delete when doing an actual insert
+                self.itemlist.remove(key)
+            else:
+                return
 
         #insert so ordering of values is preserved
         #insert at the tail of the list if list is empty 
@@ -118,7 +125,6 @@ class hashlist(dict):
                     self.itemlist[i+1] = self.itemlist[i]
 
         super(hashlist,self).__setitem__(key, value)
-
 
     def __iter__(self):
         return iter(self.itemlist)
