@@ -1,6 +1,7 @@
 """
 This module defines the hashlist class.
 """
+
 class hashlist(dict):
     """
     This class provides an ordered dictionary with
@@ -16,7 +17,8 @@ class hashlist(dict):
     """
     def __init__(self, *args, **kw):
         super(hashlist,self).__init__(*args, **kw)
-        #itemlist is an ordered list of keys
+        #itemlist is an ordered list of keys, 
+        #e.g. a list of hashtags sorted by their corresponding datetimes
         self.itemlist = super(hashlist,self).keys()
         #the maximum age of an entry compared to the youngest entry   
         self.maxstep = 60
@@ -48,9 +50,11 @@ class hashlist(dict):
         to_remove = self.itemlist[0:i]
         self.itemlist = self.itemlist[i:]
         
+        #Put this in above loop 
         for k in to_remove:
             super(hashlist, self).__delitem__(k)
 
+        #This is equivalent to i
         return len(to_remove)
 
     def add_and_update(self, key, value):
@@ -77,8 +81,8 @@ class hashlist(dict):
         has the lowest value.
 
         Arguments:-
-            key: key of new entry to dict
-            value: value of new entry to dict
+            key: key of new entry to dict, e.g. hashtag pair
+            value: value of new entry to dict, e.g. datetime
         """
 
         #Handle updates to existing key

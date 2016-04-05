@@ -5,18 +5,14 @@ a twiiter hashtag graph
 Author: Spandan Bemby
 """
 
-#TODO remove
-import json 
-import pprint
-import pdb
-
-import time
-import cProfile as profile
-
+import json
 import sys
 import itertools 
 from dateutil import parser as dateparser
 from hashlist import hashlist 
+
+import time
+import cProfile as profile
 
 
 def get_hashtag_pairs(hashtags):
@@ -50,15 +46,6 @@ def format_num(num):
         string of formatted number
     """
     return "{:.2f}\n".format(int(num * 100)/100.0)
-
-def format_num2(num):
-    """
-    returns str repr of num
-    Does:
-        -truncates to 2 decimal places
-        -pads with zeros 
-    """
-    return "{:.2f}".format(int(num * 100)/100.0)
 
 def is_stale(ref, to_compare):
     """
@@ -151,28 +138,19 @@ def average_degree(input_file_path, output_file_path):
         entries_added = False 
         entries_removed = True
         
-        #calculate the average, i.e. number of links / number of nodes
+        #calculate the average, i.e. number of incident edges/ number of nodes
+        #note that the numer of incident edges = 2 * links
         if tag_count == 0:
             avg = 0
         else:
             avg = link_count * 2 / tag_count 
 
-        #print("{}        {}        {}".format(unique_count, len(valid), format_num2(avg)))
-        #print("{}".format(format_num2(avg))) #Actual output
-        
         #write output to file
         output_file.write(format_num(avg)) 
-
+        
     output_file.close()
 
 if __name__ == "__main__":
-    
-    if len(sys.argv) == 3:
-        start_time = time.time()
-        average_degree(sys.argv[1], sys.argv[2])
-        print("--- %s seconds ---" % (time.time() - start_time))
-        #profile.run('main(input_file=sys.argv[1], output_file=sys.argv[2])')
-    else:
-       print "Invalid Number of arguments"
-       sys.exit(1)
-
+    #First argument is the input file, and the second
+    #argument is the output file
+    average_degree(sys.argv[1], sys.argv[2])
